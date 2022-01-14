@@ -40,6 +40,7 @@ def generate_random_steiner(
     """
     if seed != None:
         np.random.seed(seed)
+        random.seed(seed)
 
     # Inicializar Arrays
     # Contagem de Grau dos nós
@@ -110,8 +111,7 @@ def generate_random_steiner(
 
     else:
         # Gerar custo aleatoriamente
-        edges_cost = np.random.randint(
-            min_edge_cost, max_edge_cost + 1, size=len(edges))
+        edges_cost = np.random.randint(min_edge_cost, max_edge_cost + 1, size=len(edges))
 
     # Criar grafo
     G = nx.Graph()
@@ -150,8 +150,7 @@ def generate_random_steiner(
             u = list(subgraph)[0]
 
             # Seleciona um nó qualquer do maior componente
-            v = list(graph_connected_components[0])[
-                random.randint(0, len(graph_connected_components[0]))]
+            v = list(graph_connected_components[0])[random.randint(0, len(graph_connected_components[0]))]
 
             # Define aresta e custo
             edge = (u, v)

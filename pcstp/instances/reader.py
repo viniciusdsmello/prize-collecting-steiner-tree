@@ -5,9 +5,9 @@ from pcstp.steinertree import SteinerTreeProblem
 
 
 class SteinlibReader():
-    def __init__(self, default_node_prize: int = 0):
+    def __init__(self, default_node_prize: int = 0, **kwargs):
         self.STP = SteinerTreeProblem()
-        self._default_node_prize = default_node_prize
+        self._default_node_prize = default_node_prize or kwargs.get('default_node_prize')
 
     def parser(self, filename: str):
         """
