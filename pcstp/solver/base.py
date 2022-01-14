@@ -6,6 +6,38 @@ import networkx as nx
 import networkx.algorithms.components as comp
 
 
+def computes_steiner_cost(graph: nx.Graph, steiner_tree: nx.Graph, terminals: Set[int]) -> float:
+    """Computes the Prize-Collecting Steiner Tree cost
+
+    Args:
+        graph (nx.Graph): Instance graph
+        steiner_tree (nx.Graph): Solution Graph
+        terminals (Set[int]): List of Terminals
+
+    Returns:
+        float: Returns the cost of all edges plus all terminals not connected to the tree
+    """
+
+    steiner_cost = 0.0
+
+    terminals_not_connected_cost = sum(
+        [
+            int(graph.nodes[n]['prize']) for n in graph.nodes
+            if n in terminals and n not in steiner_tree.nodes
+        ]
+    )
+
+    edges = nx.get_edge_attributes(graph, 'cost')
+    edges_cost = 0
+    for edge in steiner_tree.edges:
+        if edge in graph.edges:
+            edges_cost += edges[tuple(sorted(edge))]
+
+    steiner_cost = edges_cost + terminals_not_connected_cost
+
+    return steiner_cost
+
+
 class BaseSolver():
     def __init__(self, graph: nx.Graph(), terminals):
         self.graph: nx.Graph = graph
@@ -57,20 +89,13 @@ class BaseSolver():
         Returns:
             float: Returns the total cost of a given path
         """
-        path_cost = 0.0
-
-        # Path cost is composed by all edge distances plus all the terminals prizes not present
-
-        path = comp.connected_components(self.steiner_tree)
-
-        terminals_not_connected_cost = sum(
-            [int(self.graph.nodes[n]['prize']) for n in self.graph.nodes if n in self.terminals and n not in path]
+        steiner_cost = computes_steiner_cost(
+            self.graph,
+            self.steiner_tree,
+            self.terminals
         )
-        edges_cost = nx.path_weight(self.graph, path, weight='cost')
 
-        path_cost = edges_cost + terminals_not_connected_cost
-
-        return path_cost
+        return steiner_cost
 
     def _get_least_cost_path(self, paths: List[List[int]]) -> Tuple[List[int], float]:
         """Given a list of Paths, finds the minimium path and its cost
