@@ -5,6 +5,10 @@ from typing import List, Set, Tuple
 import networkx as nx
 import networkx.algorithms.components as comp
 
+import logging
+
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+
 
 def computes_steiner_cost(graph: nx.Graph, steiner_tree: nx.Graph, terminals: Set[int]) -> float:
     """Computes the Prize-Collecting Steiner Tree cost
@@ -39,14 +43,21 @@ def computes_steiner_cost(graph: nx.Graph, steiner_tree: nx.Graph, terminals: Se
 
 
 class BaseSolver():
-    def __init__(self, graph: nx.Graph(), terminals):
+    def __init__(self, graph: nx.Graph(), terminals, **kwargs):
         self.graph: nx.Graph = graph
         self.terminals: Set[int] = terminals
         self.steiner_tree = nx.Graph()
+        self.steiner_cost: float = None
 
         self._start_time = None
         self._end_time = None
         self._duration = None
+
+        logging.basicConfig(
+            level=str(kwargs.get("log_level", 'info')).upper(),
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        self.log = logging.getLogger('solver')
 
     def _get_all_paths_between_nodes(self, u: int, v: int) -> list:
         """
@@ -56,7 +67,7 @@ class BaseSolver():
             u (int): First node index
             v (int): Second node index
         """
-        print(f"Finding all paths between {u} and {v}...")
+        self.log.debug(f"Finding all paths between {u} and {v}...")
         all_paths = list(nx.all_simple_paths(self.graph, u, v))
 
         return all_paths
@@ -75,7 +86,11 @@ class BaseSolver():
         # Path cost is composed by all edge distances plus all the terminals prizes not present
 
         terminals_not_connected_cost = sum(
-            [int(self.graph.nodes[n]['prize']) for n in self.graph.nodes if n in self.terminals and n not in path]
+            [
+                int(self.graph.nodes[n]['prize'])
+                for n in self.graph.nodes
+                if n in self.terminals and n not in path
+            ]
         )
         edges_cost = nx.path_weight(self.graph, path, weight='cost')
 
@@ -135,6 +150,11 @@ class BaseSolver():
         return True
 
     def _solve(self) -> Tuple[nx.Graph, int]:
+        """Solve Prize-Collecting Steiner Tree
+
+        Returns:
+            Tuple[nx.Graph, int]: Returns the Steiner Tree and its cost
+        """
         raise NotImplementedError
 
     def solve(self) -> Tuple[nx.Graph, int]:
@@ -147,6 +167,6 @@ class BaseSolver():
         steiner_tree, steiner_cost = self._solve()
         self._end_time = time.time()
         self._duration = self._end_time - self._start_time
-        print(f"Runtime of the program is {self._duration * 1000} miliseconds")
+        self.log.debug(f"Runtime of the program is {self._duration * 1000} miliseconds")
 
         return steiner_tree, steiner_cost

@@ -1,5 +1,4 @@
 """Module that implements a Gready Heuristic for Prize-Collecting Steiner Tree Problem"""
-
 from typing import List, Tuple
 import networkx as nx
 import networkx.algorithms.components as comp
@@ -7,8 +6,8 @@ from pcstp.solver.base import BaseSolver
 
 
 class GreedyH1(BaseSolver):
-    def __init__(self, graph: nx.Graph, terminals: set):
-        super().__init__(graph, terminals)
+    def __init__(self, graph: nx.Graph, terminals: set, **kwargs):
+        super().__init__(graph, terminals, **kwargs)
         self._all_terminals_path = []
 
     def _solve(self) -> Tuple[nx.Graph, int]:
@@ -30,7 +29,7 @@ class GreedyH1(BaseSolver):
                     "path": min_path
                 }
 
-                print(
+                self.log.debug(
                     f"Path between {self.terminals[terminal_i]} and {self.terminals[terminal_j]} ({min_path}) - cost ({min_cost})")
 
                 self._all_terminals_path.append(path)
@@ -63,13 +62,13 @@ class GreedyH1(BaseSolver):
         while True:
             try:
                 cycle = nx.find_cycle(self.steiner_tree)
-                print(f'Cycle found - {cycle}')
+                self.log.debug(f'Cycle found - {cycle}')
                 edge = cycle[0]
-                print(f'Removing edge {edge}...')
+                self.log.debug(f'Removing edge {edge}...')
                 self.steiner_tree.remove_edge(edge[0], edge[1])
             except:
                 break
 
-        steiner_cost = self._get_steiner_cost()
+        self.steiner_cost = self._get_steiner_cost()
 
-        return self.steiner_tree, steiner_cost
+        return self.steiner_tree, self.steiner_cost
