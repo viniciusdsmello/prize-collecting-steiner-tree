@@ -113,9 +113,13 @@ class AntColony(BaseSolver):
         """
         Applies evaporation strategy to all edges pheromones and also to beta
         """
-        for i in range(self.num_nodes):
-            for j in range(i+1, self.num_nodes):
-                self.graph[i][j]['pheromone'] *= (1 - self.evaporation_rate)
+        updated_edges = []
+        for edge in self.graph.edges:
+                if edge not in updated_edges:
+                    i, j = edge
+                    self.log.debug("Evaporating pheromone of edge (%s, %s) ...", i, j)
+                    self.graph[i][j]['pheromone'] *= (1 - self.evaporation_rate)
+                    updated_edges.append(edge)
 
         self.beta *= (1 - self.beta_evaporation_rate)
 
@@ -138,8 +142,11 @@ class AntColony(BaseSolver):
                         break
             conn_components = list(comp.connected_components(evalutation_graph))
 
-        cycle = nx.find_cycle(evalutation_graph)
-        self.log.debug(f'Cycle found - {cycle}')
+        try:
+            cycle = nx.find_cycle(evalutation_graph)
+            self.log.debug(f'Cycle found - {cycle}')
+        except:
+            pass
 
     def _solve(self) -> Tuple[nx.Graph, int]:
         """Solve Prize-Collecting Steiner Tree based on Ant Colony Optimization
@@ -192,6 +199,9 @@ class AntColony(BaseSolver):
 
         return self.steiner_tree, self.steiner_cost
 
+    def _get_neighbors(self, node: int) -> List[int]:
+        return list(self.graph.neighbors(node))
+
 
 class Ant():
     def __init__(
@@ -227,7 +237,7 @@ class Ant():
     @current_node.setter
     def current_node(self, value):
         self._current_node = value
-        self.candidate_neighbors = self._get_neighbors(self.current_node)
+        self.candidate_neighbors = self.antcolony._get_neighbors(self.current_node)
 
     def begin(self):
         """
@@ -239,15 +249,16 @@ class Ant():
         self.route = [self.current_node]
 
         self.has_visited_all_nodes = False
+        self.has_reached_leaf_node = False
 
     def has_reached_end(self):
         """
         Indicates whether the ant has reached the end.
         """
-        current_neighbors = self._get_neighbors(self.current_node)
+        current_neighbors = self.antcolony._get_neighbors(self.current_node)
         return self.has_visited_all_nodes or set(
             self.antcolony.terminals).issubset(
-            set(self.route)) or len(current_neighbors) == 0
+            set(self.route)) or len(current_neighbors) == 0 or self.has_reached_leaf_node
 
     def turn(self):
         """
@@ -285,12 +296,16 @@ class Ant():
         for i, node in enumerate(self.candidate_neighbors):
             if node in self.route:
                 continue
-            if len(self._get_neighbors(node)) == 1 and node not in self.antcolony.terminals:
+            if len(self.antcolony._get_neighbors(node)) == 1 and node not in self.antcolony.terminals:
                 self.log.debug(
                     "Node %s is a non-terminal leaf, setting it's transition probability to 0.0", node)
                 self.candidate_neighbors.remove(node)
                 neighbors_transition_probability = np.delete(neighbors_transition_probability, i)
-                continue
+            elif len(self.antcolony._get_neighbors(node)) > 1 and node == self.route[-1]:
+                self.log.debug(
+                    "Removing previous node %s from candidates", self.route[-1])
+                self.candidate_neighbors.remove(self.route[-1])
+                neighbors_transition_probability = np.delete(neighbors_transition_probability, i)
 
             eta, tau = get_tau_and_eta(node)
             neighbors_transition_probability[i] = (tau**self.antcolony.alpha) * (eta**self.antcolony.beta)
@@ -298,17 +313,8 @@ class Ant():
                            self.current_node, node, eta, tau, neighbors_transition_probability[i])
 
         if np.all(neighbors_transition_probability == 0):
-            current_node = self.current_node
-            next_node = self.route[-2]
-            self.log.debug("Ant %s has reached a leaf, returning to %s", self.name, next_node)
-            self.current_node = next_node
-    
-            try:
-                self.candidate_neighbors.remove(current_node)
-            except ValueError:
-                self.current_node = self.route[-3]
-                # self.route.pop(-1)
-                # self.route.pop(-1)
+            self.log.debug("Ant %s has reached a leaf", self.name)
+            self.has_reached_leaf_node = True
 
             # TODO: Should negative pheromone be added in order to avoid this path?
 
@@ -327,6 +333,3 @@ class Ant():
         self.log.debug("Ant %s is moving from %s to %s", self.name, self.current_node, next_node)
         self._previous_node = self.current_node
         self.current_node = next_node
-
-    def _get_neighbors(self, node: int) -> List[int]:
-        return list(self.antcolony.graph.neighbors(node))
