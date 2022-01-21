@@ -1,13 +1,14 @@
 """Module that implements Ant Colony Optmization Solver for Prize-Collecting Steiner Tree Problem"""
 
-import random
 import time
-from typing import List, Tuple
+import random
 
+import numpy as np
 import networkx as nx
 import networkx.algorithms.components as comp
-import numpy as np
-from charset_normalizer import logging
+
+from typing import List, Tuple
+from networkx.utils import pairwise
 from pcstp.solver.base import BaseSolver
 
 
@@ -77,12 +78,12 @@ class AntColony(BaseSolver):
         """
         Initializes AntColony and Ants
         """
-        logging.debug("Initializing ants...")
+        self.log.debug("Initializing ants...")
         self.ants = [
             Ant(self, ant) for ant in range(self.num_ants)
         ]
 
-        logging.debug("Initializing pheromones (strategy %s)...", self.pheromone_initialization_strategy)
+        self.log.debug("Initializing pheromones (strategy %s)...", self.pheromone_initialization_strategy)
 
         if self.pheromone_initialization_strategy == 'same':
             initial_pheromone = self.initial_pheromone
@@ -159,7 +160,6 @@ class AntColony(BaseSolver):
             # TODO: Is this the best strategy?
             # While the first ant hasn't reached the end, makes all turn
             while not self.ants[0].has_reached_end():
-
                 # For each ant, move based on probability and updates pheromones
                 for ant in self.ants:
                     ant.turn()
@@ -212,8 +212,22 @@ class Ant():
         self.name = name
         self.update_pheromones = update_pheromones
 
+        self.log = self.antcolony.log
+
         self.route: List[int] = []
         self.has_visited_all_nodes: bool = False
+
+        self._current_node: int = None
+        self._previous_node: int = None
+
+    @property
+    def current_node(self):
+        return self._current_node
+
+    @current_node.setter
+    def current_node(self, value):
+        self._current_node = value
+        self.candidate_neighbors = self._get_neighbors(self.current_node)
 
     def begin(self):
         """
@@ -230,7 +244,10 @@ class Ant():
         """
         Indicates whether the ant has reached the end.
         """
-        return self.has_visited_all_nodes or set(self.antcolony.terminals).issubset(set(self.route))
+        current_neighbors = self._get_neighbors(self.current_node)
+        return self.has_visited_all_nodes or set(
+            self.antcolony.terminals).issubset(
+            set(self.route)) or len(current_neighbors) == 0
 
     def turn(self):
         """
@@ -241,11 +258,11 @@ class Ant():
         if not self.has_reached_end():
             self.move()
 
-            # TODO: Should pheromone deposits be made independently? Wouldn't it be better to rank solutions?
             if len(self.route) == len(self.antcolony.graph.nodes):
                 self.has_visited_all_nodes = True
 
                 if self.update_pheromones:
+                    self.log.debug("Ant %s route: %s", self.name, self.route)
                     self.antcolony.trace_pheromone(self.antcolony._get_path_cost(self.route), self.route)
 
     def move(self):
@@ -255,37 +272,61 @@ class Ant():
         If p < p_choose_best, then the best path is chosen, otherwise it is selected
         from a probability distribution weighted by the pheromone.
         """
-        current_neighbors = list(self.antcolony.graph.neighbors(self.current_node))
-        transition_probability = np.zeros(shape=(len(current_neighbors)))
+        neighbors_transition_probability = np.zeros(shape=(len(self.candidate_neighbors)))
 
         def get_tau_and_eta(node: int) -> Tuple[float, float]:
             distance = self.antcolony.graph[self.current_node][node]['cost']
-            eta = 1 / distance
+
+            eta = (1 + self.antcolony.graph.nodes[node]['prize']) / (1 + distance)
             tau = self.antcolony.graph[self.current_node][node]['pheromone']
 
             return tau, eta
 
-        for i, node in enumerate(current_neighbors):
+        for i, node in enumerate(self.candidate_neighbors):
             if node in self.route:
                 continue
-
-            # If the node has zero cost, move to it
-            if self.antcolony.graph[self.current_node][node]['cost'] == 0 and self.antcolony.graph[node]['prize'] >= 0:
-                self.route.append(node)
-                self.current_node = node
-
-                return
+            if len(self._get_neighbors(node)) == 1 and node not in self.antcolony.terminals:
+                self.log.debug(
+                    "Node %s is a non-terminal leaf, setting it's transition probability to 0.0", node)
+                self.candidate_neighbors.remove(node)
+                neighbors_transition_probability = np.delete(neighbors_transition_probability, i)
+                continue
 
             eta, tau = get_tau_and_eta(node)
-            transition_probability[i] = (tau**self.antcolony.alpha) * (eta**self.antcolony.beta)
+            neighbors_transition_probability[i] = (tau**self.antcolony.alpha) * (eta**self.antcolony.beta)
+            self.log.debug('(%s -> %s) eta %s tau %s probability_numerator %s',
+                           self.current_node, node, eta, tau, neighbors_transition_probability[i])
 
-        transition_probability = transition_probability / np.sum(transition_probability)
+        if np.all(neighbors_transition_probability == 0):
+            current_node = self.current_node
+            next_node = self.route[-2]
+            self.log.debug("Ant %s has reached a leaf, returning to %s", self.name, next_node)
+            self.current_node = next_node
+    
+            try:
+                self.candidate_neighbors.remove(current_node)
+            except ValueError:
+                self.current_node = self.route[-3]
+                # self.route.pop(-1)
+                # self.route.pop(-1)
+
+            # TODO: Should negative pheromone be added in order to avoid this path?
+
+            return
+
+        neighbors_transition_probability = neighbors_transition_probability / np.sum(neighbors_transition_probability)
+        self.log.debug('transition_probability (%s) %s', self.candidate_neighbors, neighbors_transition_probability)
 
         # Given a transition probability vector, choose
         if np.random.random() < self.antcolony.choose_best:
-            next_node = np.argmax(transition_probability)
+            next_node = np.argmax(neighbors_transition_probability)
         else:
-            next_node = np.random.choice(current_neighbors, p=transition_probability)
+            next_node = np.random.choice(self.candidate_neighbors, p=neighbors_transition_probability)
 
         self.route.append(next_node)
-        self.antcolony.log.debug("Ant %s is moving from %s to %s", self.name, self.current_node, next_node)
+        self.log.debug("Ant %s is moving from %s to %s", self.name, self.current_node, next_node)
+        self._previous_node = self.current_node
+        self.current_node = next_node
+
+    def _get_neighbors(self, node: int) -> List[int]:
+        return list(self.antcolony.graph.neighbors(node))

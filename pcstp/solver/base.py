@@ -55,20 +55,36 @@ class BaseSolver():
 
         logging.basicConfig(
             level=str(kwargs.get("log_level", 'info')).upper(),
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(message)s'
         )
         self.log = logging.getLogger('solver')
 
     def _get_all_paths_between_nodes(self, u: int, v: int) -> list:
         """
-        Given a pair of nodes, finds all paths between them.
+        Given a pair of nodes, finds all simple paths between them.
 
         Args:
             u (int): First node index
             v (int): Second node index
+
+        A *simple path* in a graph is a nonempty sequence of nodes in which
+        no node appears more than once in the sequence, and each adjacent
+        pair of nodes in the sequence is adjacent in the graph.
+
+        This algorithm uses a modified depth-first search to generate the
+        paths [1]_.  A single path can be found in $O(V+E)$ time but the
+        number of simple paths in a graph can be very large, e.g. $O(n!)$ in
+        the complete graph of order $n$.
+
+        References
+        ----------
+        .. [1] R. Sedgewick, "Algorithms in C, Part 5: Graph Algorithms",
+        Addison Wesley Professional, 3rd ed., 2001.
         """
         self.log.debug(f"Finding all paths between {u} and {v}...")
-        all_paths = list(nx.all_simple_paths(self.graph, u, v))
+        
+        # TODO: Try different algoritms in order to find paths between nodes.
+        all_paths = list(nx.all_simple_paths(G=self.graph, source=u, target=v))
 
         return all_paths
 
