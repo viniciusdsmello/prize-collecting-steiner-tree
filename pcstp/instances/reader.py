@@ -79,7 +79,7 @@ class SteinlibReader():
                 w = int(w)
                 distance = int(distance)
 
-                self.STP.graph.add_edge(v, w, distance=distance)
+                self.STP.graph.add_edge(v, w, cost=distance)
 
             elif line.startswith("Nodes"):
                 nodes = re.findall(r'Nodes (\d+)$', line)
