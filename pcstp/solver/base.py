@@ -1,6 +1,6 @@
 """Module that implements the Base Solver class for the Prize-Collecting Steiner Tree Problem"""
 import time
-from typing import List, Set, Tuple
+from typing import Iterable, List, Set, Tuple
 
 import networkx as nx
 import networkx.algorithms.components as comp
@@ -31,11 +31,10 @@ def computes_steiner_cost(graph: nx.Graph, steiner_tree: nx.Graph, terminals: Se
         ]
     )
 
-    edges = nx.get_edge_attributes(graph, 'cost')
     edges_cost = 0
     for edge in steiner_tree.edges:
         if edge in graph.edges:
-            edges_cost += edges[tuple(sorted(edge))]
+            edges_cost += graph.edges[edge]['cost']
 
     steiner_cost = edges_cost + terminals_not_connected_cost
 
@@ -43,9 +42,9 @@ def computes_steiner_cost(graph: nx.Graph, steiner_tree: nx.Graph, terminals: Se
 
 
 class BaseSolver():
-    def __init__(self, graph: nx.Graph(), terminals, **kwargs):
+    def __init__(self, graph: nx.Graph(), terminals: Iterable[int], **kwargs):
         self.graph: nx.Graph = graph
-        self.terminals: Set[int] = terminals
+        self.terminals: List[int] = list(terminals)
         self.steiner_tree = nx.Graph()
         self.steiner_cost: float = None
 
@@ -82,9 +81,9 @@ class BaseSolver():
         Addison Wesley Professional, 3rd ed., 2001.
         """
         self.log.debug(f"Finding all paths between {u} and {v}...")
-        
+
         # TODO: Try different algoritms in order to find paths between nodes.
-        all_paths = list(nx.all_simple_paths(G=self.graph, source=u, target=v))
+        all_paths = list(nx.all_shortest_paths(G=self.graph, source=u, target=v))
 
         return all_paths
 
@@ -154,16 +153,23 @@ class BaseSolver():
         Returns:
             bool: Returns True if all terminals are connected and False if there terminals not connecteds
         """
+        self.log.debug("Checking if all terminals are connected...")
+        
+        are_terminals_connected = False
         for i in range(len(self.terminals)):
             for j in range(i+1, len(self.terminals)):
                 try:
-                    # Check if there are simple paths to all pair of terminals
-                    paths = list(nx.all_simple_paths(self.steiner_tree, self.terminals[i], self.terminals[j]))
-                    if len(paths) == 0:
-                        return False
+                    are_terminals_connected = nx.has_path(
+                            G=self.steiner_tree,
+                            source=self.terminals[i],
+                            target=self.terminals[j]
+                        )
+                    if are_terminals_connected == False:
+                        return are_terminals_connected
                 except:
                     return False
-        return True
+        # Only returns true if all terminals are connected
+        return are_terminals_connected
 
     def _solve(self) -> Tuple[nx.Graph, int]:
         """Solve Prize-Collecting Steiner Tree

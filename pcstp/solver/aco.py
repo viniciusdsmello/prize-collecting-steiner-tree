@@ -14,21 +14,22 @@ from pcstp.solver.base import BaseSolver
 
 class AntColony(BaseSolver):
     def __init__(
-            self,
-            graph: nx.Graph,
-            terminals: set,
-            iterations: int = 10,
-            num_ants: int = 10,
-            evaporation_rate: float = 0.1,
-            alpha: float = 1.0,
-            beta: float = 0.0,
-            beta_evaporation_rate: float = 0,
-            initial_pheromone: float = 1,
-            pheromone_amount: float = 1,
-            pheromone_initialization_strategy: str = 'same_value',
-            choose_best: float = 0.1,
-            early_stopping: int = None,
-            **kwargs):
+        self,
+        graph: nx.Graph,
+        terminals: set,
+        iterations: int = 10,
+        num_ants: int = 10,
+        evaporation_rate: float = 0.1,
+        alpha: float = 1.0,
+        beta: float = 0.0,
+        beta_evaporation_rate: float = 0,
+        initial_pheromone: float = 1,
+        pheromone_amount: float = 1,
+        pheromone_initialization_strategy: str = 'same_value',
+        choose_best: float = 0.1,
+        early_stopping: int = None,
+        **kwargs
+    ):
         """
         Prize Collecting Steiner Tree Solver based on Ant Colony Optmization
 
@@ -105,10 +106,11 @@ class AntColony(BaseSolver):
         pheromone_deposit = self.pheromone_amount / route_cost
 
         updated_edges = []
-        for edge in self.graph.edges:
+        route_edges = pairwise(route)
+        for edge in route_edges:
             if edge not in updated_edges:
                 i, j = edge
-                self.log.debug("Evaporating pheromone of edge (%s, %s) ...", i, j)
+                self.log.debug("Depositing pheromone of edge (%s, %s) ...", i, j)
                 self.graph[i][j]['pheromone'] += pheromone_deposit
                 updated_edges.append(edge)
 
@@ -134,9 +136,11 @@ class AntColony(BaseSolver):
             self.steiner_tree = nx.Graph()
             self.steiner_cost = None
 
+        # Computes Steiner Tree
+        # TODO: Find better ways to connect all routes and build the steiner tree
         all_routes = []
         for terminal in self.terminals:
-            evaluation_ant = Ant(self, 'evaluation_ant', update_pheromones=False)
+            evaluation_ant = Ant(self, f'evaluation_ant_terminal_{terminal}', update_pheromones=False)
             evaluation_ant.begin(terminal)
 
             while not evaluation_ant.has_reached_end():
@@ -144,13 +148,18 @@ class AntColony(BaseSolver):
 
             all_routes.append(evaluation_ant.route)
 
+        self.log.debug("Adding all ants routes to steiner tree...")
         for route in all_routes:
             # Transform route into steiner_graph
             nx.add_path(self.steiner_tree, route)
 
             # If all terminals are already connected, break the loop
             if self.is_all_terminals_connected():
+                self.log.debug("All terminals already connected")
                 break
+
+        # TODO: Try creating an aux graph with all nodes visited by ants, then generate the minimum spanning tree
+        # nx.minimum_spanning_tree()
 
         # Adds all edges from graph to steiner tree solution
         conn_components = list(comp.connected_components(self.steiner_tree))
@@ -175,6 +184,7 @@ class AntColony(BaseSolver):
             except:
                 break
 
+        # Computes Steiner Cost
         self.steiner_cost = self._get_steiner_cost()
 
         return self.steiner_tree, self.steiner_cost
@@ -217,7 +227,7 @@ class AntColony(BaseSolver):
             else:
                 iterations_without_improvement += 1
 
-            self.log.debug("Iteration: %s - Cost: %s", iteration, cost)
+            self.log.info("Iteration: %s - Cost: %s", iteration, cost)
 
             if iterations_without_improvement > self.early_stopping:
                 self.log.debug("Early Stopping: %s", iteration)
@@ -227,7 +237,7 @@ class AntColony(BaseSolver):
             for ant in self.ants:
                 ant.begin()
 
-        self.log.debug("Best Iteration: %s - Best Cost: %s", best_iteration, best_cost)
+        self.log.info("Best Iteration: %s - Best Cost: %s", best_iteration, best_cost)
 
         self.steiner_tree, self.steiner_cost = (best_solution, best_cost)
 
@@ -239,10 +249,10 @@ class AntColony(BaseSolver):
 
 class Ant():
     def __init__(
-            self,
-            antcolony: AntColony,
-            name: str,
-            update_pheromones: bool = True
+        self,
+        antcolony: AntColony,
+        name: str,
+        update_pheromones: bool = True
     ):
         """
         Ant is an agent of Ant Colony Optimization Technique
@@ -318,7 +328,7 @@ class Ant():
             if len(self.route) == len(self.antcolony.graph.nodes):
                 self.has_visited_all_nodes = True
 
-            if self.has_reached_leaf_node:
+            if self.has_reached_leaf_node or self.has_visited_all_nodes:
                 if self.update_pheromones:
                     self.log.debug("Ant %s is depositing pheromone...", self.name)
                     self.antcolony.trace_pheromone(self.route, self.antcolony._get_path_cost(self.route))
