@@ -73,6 +73,8 @@ class AntColony(BaseSolver):
 
         self.ants: List[Ant] = []
 
+        self.history: List[float] = []
+
         self.__initialize()
 
     def __initialize(self):
@@ -159,7 +161,6 @@ class AntColony(BaseSolver):
                 break
 
         # TODO: Try creating an aux graph with all nodes visited by ants, then generate the minimum spanning tree
-        # nx.minimum_spanning_tree()
 
         # Adds all edges from graph to steiner tree solution
         conn_components = list(comp.connected_components(self.steiner_tree))
@@ -174,15 +175,7 @@ class AntColony(BaseSolver):
             conn_components = list(comp.connected_components(self.steiner_tree))
 
         # While the steiner tree graph has any cycle, then remove one edge
-        while True:
-            try:
-                cycle = nx.find_cycle(self.steiner_tree)
-                self.log.debug(f'Cycle found - {cycle}')
-                edge = cycle[0]
-                self.log.debug(f'Removing edge {edge}...')
-                self.steiner_tree.remove_edge(edge[0], edge[1])
-            except:
-                break
+        self._process_cycles()
 
         # Computes Steiner Cost
         self.steiner_cost = self._get_steiner_cost()
@@ -227,10 +220,12 @@ class AntColony(BaseSolver):
             else:
                 iterations_without_improvement += 1
 
-            self.log.info("Iteration: %s - Cost: %s", iteration, cost)
+            self.history.append(cost)
+
+            self.log.debug("Iteration: %s - Cost: %s", iteration, cost)
 
             if iterations_without_improvement > self.early_stopping:
-                self.log.debug("Early Stopping: %s", iteration)
+                self.log.info("Early Stopping: %s", iteration)
                 break
 
             # Set a new begin for each ant
@@ -285,8 +280,11 @@ class Ant():
 
     def begin(self, current_node: int = None):
         """
-        # TODO: update docstring
-        Chooses randomly among terminals the node where the ant will begin its route
+        Sets ants initial route by setting its first node and route.
+
+        Args:
+            current_node (int, optional): When current_node is passed it is used as the start of Ant,
+            when it is None, a terminal is chosen randomly.
         """
         if current_node:
             self.current_node = current_node
@@ -339,16 +337,30 @@ class Ant():
 
         If p < p_choose_best, then the best path is chosen, otherwise it is selected
         from a probability distribution weighted by the pheromone.
+
+        p_ij{k} = tau^alpha + eta^
+
         """
         neighbors_transition_probability = np.zeros(shape=(len(self.candidate_neighbors)))
 
         def get_tau_and_eta(node: int) -> Tuple[float, float]:
+            """Given a node calculates the parameters for the probability transition
+
+            Args:
+                node (int): Neighbor node of the current node.
+
+            Returns:
+                Tuple[float, float]: Returns a tuple where the first value is tau and the second one eta.
+            """
             distance = self.antcolony.graph[self.current_node][node]['cost']
             prize = self.antcolony.graph.nodes[node]['prize']
             pheromone = self.antcolony.graph[self.current_node][node]['pheromone']
 
-            eta = (1 + prize) / (1 + distance)
             tau = pheromone
+
+            # Eta is inversely proportional to edge cost and directly proportional to the prize the node offers
+            # TODO: Should prize and distance be normalized? Both of them could've bigger values
+            eta = (1 + prize) / (1 + distance)
 
             return tau, eta
 
@@ -362,8 +374,7 @@ class Ant():
                 self.log.debug("Candidate node %s is a non-terminal leaf, setting it's probability to 0.0", node)
                 neighbors_transition_probability[i] = 0
             elif len(self.antcolony._get_neighbors(node)) > 1 and node == self.route[-1]:
-                self.log.debug("Candidate node is the previous node, setting it's probability to 0.0", self.route[-1])
-                neighbors_transition_probability[i] = 0
+                self.log.debug("Candidate node %s is the previous node, setting it's probability to 0.0", node)
             else:
                 eta, tau = get_tau_and_eta(node)
                 neighbors_transition_probability[i] = (tau**self.antcolony.alpha) * (eta**self.antcolony.beta)
@@ -388,6 +399,6 @@ class Ant():
 
         next_node = int(next_node)
         self.route.append(next_node)
-        self.log.info("Ant %s move (%s -> %s)", self.name, self.current_node, next_node)
+        self.log.debug("Ant %s move (%s -> %s)", self.name, self.current_node, next_node)
         self._previous_node = self.current_node
         self.current_node = next_node

@@ -50,13 +50,12 @@ class BaseSolver():
         self._end_time = None
         self._duration = None
 
-        reset_logging = [logging.root.removeHandler(handler) for handler in logging.root.handlers[:]]
-
         logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
         logging.basicConfig(
             level=str(kwargs.get("log_level", 'info')).upper(),
-            format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(message)s'
+            format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(message)s',
+            force=True
         )
         self.log = logging.getLogger('solver')
 

@@ -114,6 +114,14 @@ class SteinlibReader():
                 terminal_vector = [entry for entry in entries if entry.isdecimal()]
                 assert len(terminal_vector) == 1, "The line must to have one value"
                 v_terminal = terminal_vector
+                
+                v_terminal = int(v_terminal)
+                
+                terminals_prizes.update({v_terminal: prize})
+                terminals_flags.update({v_terminal: True})
+
+                self.STP.terminals.add(v_terminal)
+
                 self.STP.terminals.add(v_terminal)
             if line.startswith("TP "):
                 entries = re.findall(r'(\d+)', line)
