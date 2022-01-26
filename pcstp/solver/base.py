@@ -7,8 +7,6 @@ import networkx.algorithms.components as comp
 
 import logging
 
-logging.getLogger('matplotlib').setLevel(logging.WARNING)
-
 
 def computes_steiner_cost(graph: nx.Graph, steiner_tree: nx.Graph, terminals: Set[int]) -> float:
     """Computes the Prize-Collecting Steiner Tree cost
@@ -51,6 +49,10 @@ class BaseSolver():
         self._start_time = None
         self._end_time = None
         self._duration = None
+
+        reset_logging = [logging.root.removeHandler(handler) for handler in logging.root.handlers[:]]
+
+        logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
         logging.basicConfig(
             level=str(kwargs.get("log_level", 'info')).upper(),
@@ -154,16 +156,16 @@ class BaseSolver():
             bool: Returns True if all terminals are connected and False if there terminals not connecteds
         """
         self.log.debug("Checking if all terminals are connected...")
-        
+
         are_terminals_connected = False
         for i in range(len(self.terminals)):
             for j in range(i+1, len(self.terminals)):
                 try:
                     are_terminals_connected = nx.has_path(
-                            G=self.steiner_tree,
-                            source=self.terminals[i],
-                            target=self.terminals[j]
-                        )
+                        G=self.steiner_tree,
+                        source=self.terminals[i],
+                        target=self.terminals[j]
+                    )
                     if are_terminals_connected == False:
                         return are_terminals_connected
                 except:
@@ -192,3 +194,18 @@ class BaseSolver():
         self.log.debug(f"Runtime of the program is {self._duration * 1000} miliseconds")
 
         return steiner_tree, steiner_cost
+
+    def _process_cycles(self):
+        """
+        Process steiner_tree in order to find and remove any cycle found
+        """
+
+        while True:
+            try:
+                cycle = nx.find_cycle(self.steiner_tree)
+                self.log.debug(f'Cycle found - {cycle}')
+                edge = cycle[0]
+                self.log.debug(f'Removing edge {edge}...')
+                self.steiner_tree.remove_edge(edge[0], edge[1])
+            except:
+                break
