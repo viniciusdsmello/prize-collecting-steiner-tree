@@ -35,9 +35,9 @@ class GreedyH1(BaseSolver):
         self.log.debug(f"Finding all paths between {u} and {v}...")
 
         # TODO: Try different algoritms in order to find paths between nodes.
-        all_paths = list(nx.all_shortest_paths(G=self.graph, source=u, target=v))
-        print(all_paths)
-        print(type(all_paths))
+        #all_paths = list(nx.all_shortest_paths(G=self.graph, source=u, target=v))
+        #print(all_paths)
+        #print(type(all_paths))
         pred, distance_floyd = nx.floyd_warshall_predecessor_and_distance(G=self.graph, weight="cost")
         all_paths2 = []
         all_paths2.append(nx.reconstruct_path(u, v, pred))
