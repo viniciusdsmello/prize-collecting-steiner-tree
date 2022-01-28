@@ -3,14 +3,31 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['axes.facecolor'] = 'white'
 
+
+def graph_layout(G: nx.Graph, k: float = None, iterations: int = 200, seed: int = 1337):
+    """
+    Generates graph layout
+    Args:
+        G (nx.Graph): Prize Collecting Steiner instance graph
+    Returns:
+        Returns a set of positions to draw the graph
+    """
+
+    if not k:
+        k = 1/len(G)
+
+    return nx.spring_layout(G, k=k, iterations=iterations, seed=seed)
+
+
 def draw_steiner_graph(
-        G: nx.Graph,
-        plot_title: str = None,
-        steiner_graph: nx.Graph = None,
-        node_label: str = 'prize',
-        node_color: str = 'blue',
-        terminal_color: str = 'red'
-    ):
+    G: nx.Graph,
+    plot_title: str = None,
+    steiner_graph: nx.Graph = None,
+    node_label: str = 'prize',
+    node_color: str = 'blue',
+    terminal_color: str = 'red',
+    seed: int = 10
+):
     """
     Function that receives a PCSTP Graph and draws its nodes and edges
 
@@ -21,10 +38,11 @@ def draw_steiner_graph(
         node_label (str): Label used for nodes ('prize' or 'name').
         node_color (str): Color used for nodes that are not terminals
         terminal_color (str): Color used for terminal nodes
+        seed (int): Seed to be used for generating random numbers
     Returns:
         None
     """
-    node_pos = nx.get_node_attributes(G, 'pos')
+    node_pos = graph_layout(G, seed=seed)
     node_list = list(nx.get_node_attributes(G, 'prize').keys())
     node_size = [50 * (size+10) for size in list(nx.get_node_attributes(G, 'prize').values())]
     node_color = [
@@ -36,7 +54,7 @@ def draw_steiner_graph(
 
     f, ax = plt.subplots(figsize=(15, 15))
 
-    ax.set_title(plot_title, fontsize = 14)
+    ax.set_title(plot_title, fontsize=14)
 
     # Draws graph nodes
     nx.draw_networkx_nodes(
@@ -49,7 +67,7 @@ def draw_steiner_graph(
     )
     nx.draw_networkx_labels(
         G,
-        pos=nx.get_node_attributes(G, 'pos'),
+        pos=node_pos,
         labels=node_label,
         font_size=16,
         font_color='white',
@@ -59,7 +77,7 @@ def draw_steiner_graph(
     # Draws graph edges
     nx.draw_networkx_edges(
         G,
-        pos=nx.get_node_attributes(G, 'pos'),
+        pos=node_pos,
         edge_color='k',
         width=0.3,
         style='--',
@@ -67,7 +85,7 @@ def draw_steiner_graph(
     )
     nx.draw_networkx_edge_labels(
         G,
-        pos=nx.get_node_attributes(G, 'pos'),
+        pos=node_pos,
         edge_labels=nx.get_edge_attributes(G, 'cost'),
         font_color='blue'
     )
@@ -75,7 +93,7 @@ def draw_steiner_graph(
     if steiner_graph:
         nx.draw_networkx_edges(
             steiner_graph,
-            pos=nx.get_node_attributes(G, 'pos'),
+            pos=node_pos,
             edge_color='orange',
             width=2,
             style='-.',
