@@ -28,6 +28,7 @@ class AntColony(BaseSolver):
         pheromone_initialization_strategy: str = 'same_value',
         choose_best: float = 0.1,
         early_stopping: int = None,
+        seed: int = 100,
         **kwargs
     ):
         """
@@ -49,6 +50,8 @@ class AntColony(BaseSolver):
                 When 'heuristic' is passed, a greedy heuristic is used to initialize the edges with initial pheromone.
                 Defaults to 'same_value'.
             choose_best (float, optional): Indicates at which probability the best path will be take by each ant. Defaults to 0.1.
+            early_stopping (int, optional): Indicates how many iterations without improvement should be tolerated.
+            seed (int, optional): Seed used for experiments reproductibility
         """
         super().__init__(graph, terminals, **kwargs)
 
@@ -70,6 +73,10 @@ class AntColony(BaseSolver):
             self.early_stopping = early_stopping
         else:
             self.early_stopping = self.iterations
+
+        if seed:
+            np.random.seed(seed)
+            random.seed(seed)
 
         self.ants: List[Ant] = []
 
@@ -160,8 +167,6 @@ class AntColony(BaseSolver):
                 self.log.debug("All terminals already connected")
                 break
 
-        # TODO: Try creating an aux graph with all nodes visited by ants, then generate the minimum spanning tree
-
         # Adds all edges from graph to steiner tree solution
         conn_components = list(comp.connected_components(self.steiner_tree))
         while len(conn_components) > 1:
@@ -189,7 +194,6 @@ class AntColony(BaseSolver):
             Tuple[nx.Graph, int]: Returns the Steiner Tree and its cost
         """
         best_cost: float = float('inf')
-        best_route: List[int] = []
         best_solution: nx.Graph = None
         best_iteration: int = None
         iterations_without_improvement = 0
