@@ -44,7 +44,9 @@ def draw_steiner_graph(
     """
     node_pos = graph_layout(G, seed=seed)
     node_list = list(nx.get_node_attributes(G, 'prize').keys())
-    node_size = [50 * (size+10) for size in list(nx.get_node_attributes(G, 'prize').values())]
+    prizes = list(nx.get_node_attributes(G, 'prize').values())
+    max_prizes = max(max(prizes), 1)
+    node_size = [100 * (int(size/max_prizes)+ 10) for size in prizes]
     node_color = [
         terminal_color
         if is_terminal else node_color
