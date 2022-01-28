@@ -203,9 +203,7 @@ class AntColony(BaseSolver):
 
         for iteration in range(self.iterations):
             self._iteration_start_time = time.time()
-            # TODO: Is this the best strategy?
-            # While the first ant hasn't reached the end, makes all turn
-            while not self.ants[0].has_reached_end():
+            while all(not ant.has_reached_end() for ant in self.ants):
                 # For each ant, move based on probability and updates pheromones
                 for ant in self.ants:
                     ant.turn()

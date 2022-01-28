@@ -156,21 +156,10 @@ class BaseSolver():
         """
         self.log.debug("Checking if all terminals are connected...")
 
-        are_terminals_connected = False
-        for i in range(len(self.terminals)):
-            for j in range(i+1, len(self.terminals)):
-                try:
-                    are_terminals_connected = nx.has_path(
-                        G=self.steiner_tree,
-                        source=self.terminals[i],
-                        target=self.terminals[j]
-                    )
-                    if are_terminals_connected == False:
-                        return are_terminals_connected
-                except:
-                    return False
-        # Only returns true if all terminals are connected
-        return are_terminals_connected
+        terminals_connected = []
+        for terminal in self.terminals:
+            terminals_connected.append(terminal in self.steiner_tree.nodes)
+        return all(terminals_connected)
 
     def _solve(self) -> Tuple[nx.Graph, int]:
         """Solve Prize-Collecting Steiner Tree
