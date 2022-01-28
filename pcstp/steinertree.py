@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import pandas as pd
-from typing import Set, Tuple
+from typing import Iterable, Set, Tuple
 
 import networkx as nx
 
@@ -17,12 +17,16 @@ class SteinerTreeProblem():
         self.creator: str = None
         self.filename: str = None
 
+        self.num_nodes: int = None
+        self.num_edges: int = None
+        self.num_terminals: int = None
+
     @property
     def terminals(self):
         return self._terminals
 
     @terminals.setter
-    def terminals(self, terminals):
+    def terminals(self, terminals: Iterable):
         self._terminals = terminals
         self.num_terminals = len(terminals)
 
@@ -31,7 +35,7 @@ class SteinerTreeProblem():
         return self._graph
 
     @graph.setter
-    def graph(self, graph):
+    def graph(self, graph: nx.Graph):
         self._graph = graph
         self.num_nodes: int = len(self.graph.nodes)
         self.num_edges: int = len(self.graph.edges)
@@ -44,7 +48,7 @@ class SteinerTreeProblem():
         """
         Generate two dataframes with instance data and write csv files in the export/instances folder.
         One for nodes (nodes.csv) and one for edges (edges.csv)
-        
+
         Args:
             path (str): Path where output files with be written.
             save (bool): If True, saves file to the path given.
