@@ -31,6 +31,7 @@ class AntColony(BaseSolver):
         early_stopping: int = None,
         seed: int = 100,
         normalize_distance_prize: bool = False,
+        allow_edge_perturbation: bool = False,
         **kwargs
     ):
         """
@@ -62,6 +63,8 @@ class AntColony(BaseSolver):
             seed (int, optional): Seed used for experiments reproductibility
             normalize_distance_prize (bool, optional): If true, applies MinMax normalization to edges cost and nodes prizes.
                 Defaults to 'False'.
+            allow_edge_perturbation (bool, optional): If true, adds a uniform distributed perturbation to edges cost.
+                Defaults to 'False'.
         """
         super().__init__(graph, terminals, **kwargs)
 
@@ -88,6 +91,7 @@ class AntColony(BaseSolver):
         self.pheromone_initialization_strategy = pheromone_initialization_strategy
         self.choose_best = choose_best
         self.normalize_distance_prize = normalize_distance_prize
+        self.allow_edge_perturbation = allow_edge_perturbation
 
         if early_stopping:
             self.early_stopping = early_stopping
@@ -421,7 +425,7 @@ class Ant():
             Returns:
                 Tuple[float, float]: Returns a tuple where the first value is tau and the second one eta.
             """
-            perturbation = random.random()
+            perturbation = random.random() if self.antcolony.allow_edge_perturbation else 1
 
             def min_max_normalization(value, min, max):
                 return (value - min) / (max - min)
