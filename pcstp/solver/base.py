@@ -187,7 +187,7 @@ class BaseSolver():
         """
         Process steiner_tree in order to find and remove any cycle found
         """
-
+        self.log.debug("Checking cycles...")
         while True:
             try:
                 cycle = nx.find_cycle(self.steiner_tree)

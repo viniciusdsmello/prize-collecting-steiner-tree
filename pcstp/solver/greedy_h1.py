@@ -49,8 +49,8 @@ class GreedyH1(BaseSolver):
         # Adds all edges from graph to steiner tree solution
         conn_components = list(comp.connected_components(self.steiner_tree))
         while len(conn_components) > 1:
-            comp1 = conn_components[0]
-            comp2 = conn_components[1]
+            comp1 = list(conn_components[0])
+            comp2 = list(conn_components[1])
             for j in range(0, len(comp1)):
                 for k in range(0, len(comp2)):
                     if self.graph.has_edge(comp1[j], comp2[k]):
