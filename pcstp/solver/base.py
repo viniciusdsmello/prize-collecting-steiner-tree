@@ -54,7 +54,7 @@ class BaseSolver():
 
         logging.basicConfig(
             level=str(kwargs.get("log_level", 'info')).upper(),
-            format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(message)s',
+            format='%(asctime)s - [%(filename)s:%(lineno)d] - %(threadName)s - %(levelname)s - %(message)s',
             force=True
         )
         self.log = logging.getLogger('solver')
@@ -188,11 +188,16 @@ class BaseSolver():
         Process steiner_tree in order to find and remove any cycle found
         """
         self.log.debug("Checking cycles...")
+        all_edges_cost = dict(nx.get_edge_attributes(self.graph, 'cost')).items()
         while True:
             try:
                 cycle = nx.find_cycle(self.steiner_tree)
                 self.log.debug(f'Cycle found - {cycle}')
-                edge = cycle[0]
+                
+                # Sort edges by cost
+                cycle_edges_cost = list(filter(lambda edge: edge in cycle, all_edges_cost)).sort(key=lambda edge: edge['cost'])
+                
+                edge = cycle_edges_cost[-1]
                 self.log.debug(f'Removing edge {edge}...')
                 self.steiner_tree.remove_edge(edge[0], edge[1])
             except:
