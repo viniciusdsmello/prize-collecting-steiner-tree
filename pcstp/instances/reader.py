@@ -76,15 +76,15 @@ class SteinlibReader():
         """
         for line in file:
             if line.startswith("E "):
-                entries = re.findall(r'(\d+)', line)
-                edge_vector = [entry for entry in entries if entry.isdecimal()]
+                entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
+                edge_vector = [entry[0] for entry in entries]
 
                 assert len(edge_vector) == 3, "The line must to have three values"
                 v, w, distance = edge_vector
 
                 v = int(v)
                 w = int(w)
-                distance = int(distance)
+                distance = float(distance)
 
                 self.graph.add_edge(v, w, cost=distance)
             elif "END" in line:
@@ -108,8 +108,8 @@ class SteinlibReader():
 
         for line in file:
             if line.startswith("T "):
-                entries = re.findall(r'(\d+)', line)
-                terminal_vector = [entry for entry in entries if entry.isdecimal()]
+                entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
+                terminal_vector = [entry[0] for entry in entries]
                 assert len(terminal_vector) == 1, "The line must to have one value"
                 v_terminal = terminal_vector
 
@@ -122,19 +122,20 @@ class SteinlibReader():
 
                 self.terminals.add(v_terminal)
             if line.startswith("TP "):
-                entries = re.findall(r'(\d+)', line)
-                terminal_vector = [entry for entry in entries if entry.isdecimal()]
+                entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
+                terminal_vector = [entry[0] for entry in entries]
 
                 assert len(terminal_vector) == 2, "The line must to have two values"
                 v_terminal, prize = terminal_vector
 
                 v_terminal = int(v_terminal)
-                prize = int(prize)
+                prize = float(prize)
+                
+                if prize > 0:
+                    terminals_prizes.update({v_terminal: prize})
+                    terminals_flags.update({v_terminal: True})
 
-                terminals_prizes.update({v_terminal: prize})
-                terminals_flags.update({v_terminal: True})
-
-                self.terminals.add(v_terminal)
+                    self.terminals.add(v_terminal)
             elif "END" in line:
                 break
         nx.set_node_attributes(self.graph, terminals_prizes, "prize")
@@ -196,7 +197,7 @@ class DatReader():
                     node = int(float(node))
                     v = int(float(v))
                     h = int(float(h))
-                    prize = int(float(prize))
+                    prize = float(prize)
 
                     is_terminal = prize > 0
 
@@ -233,7 +234,7 @@ class DatReader():
                 edge = int(float(edge))
                 u = int(float(u))
                 v = int(float(v))
-                cost = int(float(cost))
+                cost = float(cost)
 
                 self.graph.add_edge(u, v, cost=cost)
             else:
