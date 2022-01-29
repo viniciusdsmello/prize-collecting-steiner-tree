@@ -25,10 +25,12 @@ class AntColony(BaseSolver):
         beta_evaporation_rate: float = 0,
         initial_pheromone: float = 1,
         pheromone_amount: float = 1,
+        pheromone_deposit_strategy: str = 'traditional',
         pheromone_initialization_strategy: str = 'same_value',
         choose_best: float = 0.1,
         early_stopping: int = None,
         seed: int = 100,
+        normalize_distance_prize: bool = False,
         **kwargs
     ):
         """
@@ -45,18 +47,34 @@ class AntColony(BaseSolver):
             beta_evaporation_rate (float, optional): Beta evaporation rate. Defaults to 0.
             initial_pheromone (float, optional): Initial pheromone value. Defaults to 1.
             pheromone_amount (float, optional): Pheromone amout deposited by each ant. Defaults to 1.
+            pheromone_deposit_strategy (str, optional): Pheromone deposit strategy.
+                When its value equals to 'traditional', each ant can deposit its pheromone.
+                When its value equals to 'best_route', only the best ant deposits pheromone.
+                Defaults to 'traditional'.
             pheromone_initialization_strategy (str, optional): Pheromone initialization strategy.
                 When 'same_value' is passed, all edges are initialized with `initial_pheromone`.
                 When 'heuristic' is passed, a greedy heuristic is used to initialize the edges with initial pheromone.
+                It then finds the lowest cost path between all terminals pairs, then sets initial_pheromone on its edges.
+                The remaining edges are initialized with initial_pheromone / 2.
                 Defaults to 'same_value'.
             choose_best (float, optional): Indicates at which probability the best path will be take by each ant. Defaults to 0.1.
             early_stopping (int, optional): Indicates how many iterations without improvement should be tolerated.
             seed (int, optional): Seed used for experiments reproductibility
+            normalize_distance_prize (bool, optional): If true, applies MinMax normalization to edges cost and nodes prizes.
+                Defaults to 'False'.
         """
         super().__init__(graph, terminals, **kwargs)
 
+        assert num_ants > 0, 'Invalid number of ants'
+        assert iterations > 0, 'Invalid number of iterations'
+
         assert evaporation_rate > 0, 'evaporation_rate must be greater than 0'
         assert evaporation_rate <= 1, 'evaporation_rate must be less or equal than 1'
+
+        assert pheromone_deposit_strategy in (
+            'traditional', 'best_route'), 'Invalid value for pheromone_deposit_strategy'
+        assert pheromone_initialization_strategy in (
+            'same_value', 'heuristic'), 'Invalid value for pheromone_deposit_strategy'
 
         self.iterations = iterations
         self.num_ants = num_ants
@@ -66,8 +84,10 @@ class AntColony(BaseSolver):
         self.beta_evaporation_rate = beta_evaporation_rate
         self.initial_pheromone = initial_pheromone
         self.pheromone_amount = pheromone_amount
+        self.pheromone_deposit_strategy = pheromone_deposit_strategy
         self.pheromone_initialization_strategy = pheromone_initialization_strategy
         self.choose_best = choose_best
+        self.normalize_distance_prize = normalize_distance_prize
 
         if early_stopping:
             self.early_stopping = early_stopping
@@ -98,8 +118,38 @@ class AntColony(BaseSolver):
         if self.pheromone_initialization_strategy == 'same_value':
             initial_pheromone = self.initial_pheromone
         elif self.pheromone_initialization_strategy == 'heuristic':
-            # TODO: Adds a initialization scheme
             initial_pheromone = {}
+            _all_terminals_path = []
+            # For each terminal pair
+            for terminal_i in range(len(self.terminals)):
+                for terminal_j in range(terminal_i+1, len(self.terminals)):
+                    paths = self._get_all_paths_between_nodes(
+                        list(self.terminals)[terminal_i],
+                        list(self.terminals)[terminal_j])
+                    min_path, min_cost = self._get_least_cost_path(paths)
+
+                    path = {
+                        "cost": min_cost,
+                        "path": min_path
+                    }
+                    _all_terminals_path.append(path)
+
+            # After finding all paths between terminals
+            # Sort them based on cost
+            _all_terminals_path.sort(key=lambda path: path['cost'])
+
+            best_path = _all_terminals_path[0]['path']
+            best_edges = pairwise(best_path)
+
+            self.log.debug("Depositing initial_pheromone to path %s", best_path)
+
+            initial_pheromone = dict(
+                [
+                    edge,
+                    self.initial_pheromone if edge in best_edges else self.initial_pheromone * 0.5
+                ]
+                for edge in self.graph.edges
+            )
 
         nx.set_edge_attributes(self.graph, initial_pheromone, name='pheromone')
 
@@ -168,7 +218,10 @@ class AntColony(BaseSolver):
                 break
 
         # Adds all edges from graph to steiner tree solution
+        self.log.debug("Building steiner_tree from original graph...")
         conn_components = list(comp.connected_components(self.steiner_tree))
+        self.log.debug("Connected Componentes %s", conn_components)
+        self.log.debug("steiner_tree edges: %s", self.steiner_tree.edges)
         while len(conn_components) > 1:
             comp1 = list(conn_components[0])
             comp2 = list(conn_components[1])
@@ -203,10 +256,18 @@ class AntColony(BaseSolver):
 
         for iteration in range(self.iterations):
             self._iteration_start_time = time.time()
+
             while all(not ant.has_reached_end() for ant in self.ants):
                 # For each ant, move based on probability and updates pheromones
                 for ant in self.ants:
                     ant.turn()
+
+            if self.pheromone_deposit_strategy == 'best_route':
+                paths = [ant.route for ant in self.ants]
+                min_path, min_cost = self._get_least_cost_path(paths)
+                path_index = paths.index(min_path)
+                self.log.debug('Depositing pheromone on ant %s route...', self.ants[path_index].name)
+                self.trace_pheromone(min_path, min_cost)
 
             # Applies evaporation strategy
             self.evaporate()
@@ -271,6 +332,12 @@ class Ant():
         self._current_node: int = None
         self._previous_node: int = None
 
+        self.max_prize = max(list(nx.get_node_attributes(self.antcolony.graph, 'prize').values()))
+        self.min_prize = min(list(nx.get_node_attributes(self.antcolony.graph, 'prize').values()))
+
+        self.max_distance = max(list(nx.get_edge_attributes(self.antcolony.graph, 'cost').values()))
+        self.min_distance = min(list(nx.get_edge_attributes(self.antcolony.graph, 'cost').values()))
+
     @property
     def current_node(self):
         return self._current_node
@@ -329,7 +396,7 @@ class Ant():
                 self.has_visited_all_nodes = True
 
             if self.has_reached_leaf_node or self.has_visited_all_nodes:
-                if self.update_pheromones:
+                if self.update_pheromones and self.antcolony.pheromone_deposit_strategy == 'traditional':
                     self.log.debug("Ant %s is depositing pheromone...", self.name)
                     self.antcolony.trace_pheromone(self.route, self.antcolony._get_path_cost(self.route))
 
@@ -340,7 +407,7 @@ class Ant():
         If p < p_choose_best, then the best path is chosen, otherwise it is selected
         from a probability distribution weighted by the pheromone.
 
-        p_ij{k} = tau^alpha + eta^
+        p_ij{k} = tau^alpha + eta^beta
 
         """
         neighbors_transition_probability = np.zeros(shape=(len(self.candidate_neighbors)))
@@ -354,8 +421,18 @@ class Ant():
             Returns:
                 Tuple[float, float]: Returns a tuple where the first value is tau and the second one eta.
             """
-            distance = self.antcolony.graph[self.current_node][node]['cost']
+            perturbation = random.random()
+
+            def min_max_normalization(value, min, max):
+                return (value - min) / (max - min)
+
+            distance = self.antcolony.graph[self.current_node][node]['cost'] * perturbation
             prize = self.antcolony.graph.nodes[node]['prize']
+
+            if self.antcolony.normalize_distance_prize:
+                distance = min_max_normalization(distance, self.max_distance, self.min_distance)
+                prize = min_max_normalization(prize, self.min_prize, self.max_prize)
+
             pheromone = self.antcolony.graph[self.current_node][node]['pheromone']
 
             tau = pheromone
