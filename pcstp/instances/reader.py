@@ -13,6 +13,11 @@ class SteinlibReader():
         self.terminals = set()
         self._default_node_prize = default_node_prize
 
+        self._num_nodes = 0
+        self._num_edges = 0
+        self._num_terminals = 0
+        self._unique_nodes_parsed = set()
+
     def parser(self, filename: str):
         """
         Method responsible for parsing steinlib files and constructing a SteinerTreeProblem object
@@ -38,6 +43,10 @@ class SteinlibReader():
 
         self.STP.terminals = self.terminals
         self.STP.graph = self.graph
+
+        # assert self._num_nodes == len(self.graph.nodes), f'Failed to parse all nodes. Expected: {self._num_nodes} Parsed: {len(self.graph.nodes)}'
+        # assert self._num_edges == len(self.graph.edges), f'Failed to parse all edges. Expected: {self._num_edges} Parsed: {len(self.graph.edges)}'
+        # assert self._num_terminals == len(self.terminals), f'Failed to parse all terminals. Expected: {self._num_terminals} Parsed: {len(self.terminals)}'
 
         return self.STP
 
@@ -77,21 +86,26 @@ class SteinlibReader():
             None
         """
         for line in file:
-            if line.startswith("E ") or line.startswith("E\t"):
+            if line.startswith('Nodes'):
+                self._num_nodes = int(re.findall(r'([-+]*\d+\.\d+|[-+]*\d+)', line)[0])
+            elif line.startswith('Edges'):
+                self._num_edges = int(re.findall(r'([-+]*\d+\.\d+|[-+]*\d+)', line)[0])
+            elif line.startswith("E ") or line.startswith("E\t"):
                 entries = re.findall(r'([-+]*\d+\.\d+|[-+]*\d+)', line)
                 edge_vector = [entry for entry in entries]
 
                 assert len(edge_vector) == 3, "The line must to have three values"
-                v, w, distance = edge_vector
+                v, w, cost = edge_vector
 
                 v = int(v)
                 w = int(w)
-                distance = float(distance)
+                self._unique_nodes_parsed.add(v)
+                self._unique_nodes_parsed.add(w)
+                cost = float(cost)
 
-                self.graph.add_edge(v, w, cost=distance)
+                self.graph.add_edge(v, w, cost=cost)
             elif "END" in line:
                 break
-
         # Set default node attributes
         nx.set_node_attributes(self.graph, name='prize', values=self._default_node_prize)
         nx.set_node_attributes(self.graph, name='terminal', values=False)
@@ -109,7 +123,9 @@ class SteinlibReader():
         terminals_flags = {}
 
         for line in file:
-            if line.startswith("T ") or line.startswith("T\t"):
+            if line.startswith('Terminals'):
+                self._num_terminals = int(re.findall(r'([-+]*\d+\.\d+|[-+]*\d+)', line)[0])
+            elif line.startswith("T ") or line.startswith("T\t"):
                 entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
                 terminal_vector = [entry[0] for entry in entries]
                 assert len(terminal_vector) == 1, "The line must to have one value"
@@ -123,7 +139,7 @@ class SteinlibReader():
                 self.terminals.add(v_terminal)
 
                 self.terminals.add(v_terminal)
-            if line.startswith("TP ") or line.startswith("TP\t"):
+            elif line.startswith("TP"):
                 entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
                 terminal_vector = [entry[0] for entry in entries]
 
@@ -138,6 +154,17 @@ class SteinlibReader():
                     terminals_flags.update({v_terminal: True})
 
                     self.terminals.add(v_terminal)
+            elif line.startswith("RootP"):
+                entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
+                terminal_vector = [entry[0] for entry in entries]
+
+                assert len(terminal_vector) == 1, "The line must to have one value"
+
+                v_terminal = terminal_vector[0]
+                v_terminal = int(v_terminal)
+
+                self.terminals.add(v_terminal)
+
             elif "END" in line:
                 break
         nx.set_node_attributes(self.graph, terminals_prizes, "prize")
@@ -205,6 +232,8 @@ class DatReader():
 
                     self.graph.add_node(node, prize=prize, terminal=is_terminal, pos=(v, h))
 
+                    if node not in self.graph.nodes:
+                        self.graph.add_node(node, terminal=is_terminal, prize=prize)
                     if is_terminal:
                         self.terminals.add(node)
                 else:
@@ -247,13 +276,13 @@ if __name__ == "__main__":
     stp_reader = SteinlibReader()
 
     INSTANCES_PATH_PREFIX = './data/instances/benchmark/'
-    NUM_EXPERIMENTS_PER_INSTANCE = 10
 
     # all_files = glob.glob(os.path.join(INSTANCES_PATH_PREFIX, '*'), recursive=False)
     all_files = []
     for root, dirs, files in os.walk(INSTANCES_PATH_PREFIX):
         for file in files:
-            all_files.append(os.path.join(root, file))
+            if not file.endswith('.xlsx'):
+                all_files.append(os.path.join(root, file))
 
     print(f"Importing {len(all_files)} files")
 
@@ -276,4 +305,4 @@ if __name__ == "__main__":
             # print("Edges: ", stp.num_edges)
             # print("Terminals: ", stp.num_terminals)
         except Exception as e:
-            print("Failed to parse: ", filename)
+            print(f"Failed to parse: {filename} - Error: {e}")
