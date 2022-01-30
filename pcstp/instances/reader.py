@@ -1,3 +1,5 @@
+import glob
+import os
 import re
 import typing
 import networkx as nx
@@ -130,7 +132,7 @@ class SteinlibReader():
 
                 v_terminal = int(v_terminal)
                 prize = float(prize)
-                
+
                 if prize > 0:
                     terminals_prizes.update({v_terminal: prize})
                     terminals_flags.update({v_terminal: True})
@@ -243,9 +245,35 @@ class DatReader():
 
 if __name__ == "__main__":
     stp_reader = SteinlibReader()
-    # stp = stp_reader.parser(filename='./data/instances/dat/steinc1-wmax_10-seed_33000-gw.dat')
-    stp = stp_reader.parser(filename='./data/instances/benchmark/RPCST-cologne/cologne1/i101M2.stp')
 
-    print("Nodes: ", stp.num_nodes)
-    print("Edges: ", stp.num_edges)
-    print("Terminals: ", stp.num_terminals)
+    INSTANCES_PATH_PREFIX = './data/instances/benchmark/'
+    NUM_EXPERIMENTS_PER_INSTANCE = 10
+
+    # all_files = glob.glob(os.path.join(INSTANCES_PATH_PREFIX, '*'), recursive=False)
+    all_files = []
+    for root, dirs, files in os.walk(INSTANCES_PATH_PREFIX):
+        for file in files:
+            all_files.append(os.path.join(root, file))
+
+    print(f"Importing {len(all_files)} files")
+
+    files = all_files
+    for filename in files:
+        try:
+            if filename.endswith('.stp'):
+                stp_reader = SteinlibReader()
+            else:
+                stp_reader = DatReader()
+
+            stp = stp_reader.parser(filename=filename)
+
+            if stp.num_nodes == 0 or stp.num_edges == 0 or stp.num_terminals == 0:
+                raise ValueError(f'Failed to parse file {filename}')
+
+            # print('')
+            # print("Filename: ", stp.filename)
+            # print("Nodes: ", stp.num_nodes)
+            # print("Edges: ", stp.num_edges)
+            # print("Terminals: ", stp.num_terminals)
+        except Exception as e:
+            print("Failed to parse: ", filename)
