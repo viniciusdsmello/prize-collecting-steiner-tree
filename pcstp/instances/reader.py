@@ -78,8 +78,8 @@ class SteinlibReader():
         """
         for line in file:
             if line.startswith("E ") or line.startswith("E\t"):
-                entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
-                edge_vector = [entry[0] for entry in entries]
+                entries = re.findall(r'([-+]*\d+\.\d+|[-+]*\d+)', line)
+                edge_vector = [entry for entry in entries]
 
                 assert len(edge_vector) == 3, "The line must to have three values"
                 v, w, distance = edge_vector
