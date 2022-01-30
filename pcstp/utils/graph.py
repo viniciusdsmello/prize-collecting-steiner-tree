@@ -1,6 +1,8 @@
 from tabnanny import verbose
-from typing import Tuple, Set
+from typing import Set, Tuple
+
 import networkx as nx
+import networkx.algorithms.components as comp
 
 
 def preprocessing(graph: nx.Graph, terminals: set, verbose: bool = False) -> Tuple[nx.Graph, Set[int]]:
@@ -31,5 +33,16 @@ def preprocessing(graph: nx.Graph, terminals: set, verbose: bool = False) -> Tup
         final_graph.remove_nodes_from(nodes_to_remove)
         nodes_to_remove = get_nodes_to_remove(final_graph, terminals)
         iteration += 1
+
+    conn_components = list(comp.connected_components(final_graph))
+    for component in conn_components:
+        has_terminals = False
+        for terminal in terminals:
+            if terminal in component:
+                has_terminals = True
+                break
+        if not has_terminals:
+            for node in component:
+                final_graph.remove_node(node)
 
     return final_graph, terminals
