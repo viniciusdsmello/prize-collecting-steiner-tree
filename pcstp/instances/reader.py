@@ -75,7 +75,7 @@ class SteinlibReader():
             None
         """
         for line in file:
-            if line.startswith("E "):
+            if line.startswith("E ") or line.startswith("E\t"):
                 entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
                 edge_vector = [entry[0] for entry in entries]
 
@@ -107,7 +107,7 @@ class SteinlibReader():
         terminals_flags = {}
 
         for line in file:
-            if line.startswith("T "):
+            if line.startswith("T ") or line.startswith("T\t"):
                 entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
                 terminal_vector = [entry[0] for entry in entries]
                 assert len(terminal_vector) == 1, "The line must to have one value"
@@ -121,7 +121,7 @@ class SteinlibReader():
                 self.terminals.add(v_terminal)
 
                 self.terminals.add(v_terminal)
-            if line.startswith("TP "):
+            if line.startswith("TP ") or line.startswith("TP\t"):
                 entries = re.findall(r'(\d{1,}((\.\d{1,})){0,})', line)
                 terminal_vector = [entry[0] for entry in entries]
 
@@ -242,9 +242,9 @@ class DatReader():
 
 
 if __name__ == "__main__":
-    stp_reader = DatReader()
+    stp_reader = SteinlibReader()
     # stp = stp_reader.parser(filename='./data/instances/dat/steinc1-wmax_10-seed_33000-gw.dat')
-    stp = stp_reader.parser(filename='./data/instances/dat/K100')
+    stp = stp_reader.parser(filename='./data/instances/benchmark/RPCST-cologne/cologne1/i101M2.stp')
 
     print("Nodes: ", stp.num_nodes)
     print("Edges: ", stp.num_edges)
