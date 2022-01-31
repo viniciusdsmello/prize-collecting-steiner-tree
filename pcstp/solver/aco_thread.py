@@ -440,7 +440,7 @@ class Ant(Thread):
             perturbation = random.random() if self.antcolony.allow_edge_perturbation else 1
 
             def min_max_normalization(value, min, max):
-                return (value - min) / (max - min)
+                return (value - min) / (max - min) if max != min else value
 
             distance = self.antcolony.graph[self.current_node][node]['cost'] * perturbation
             prize = self.antcolony.graph.nodes[node]['prize']

@@ -211,6 +211,7 @@ class AntColony(BaseSolver):
 
             all_routes.append(evaluation_ant.route)
 
+
         self.log.debug("Adding all ants routes to steiner tree...")
         for route in all_routes:
             # Transform route into steiner_graph
@@ -221,7 +222,9 @@ class AntColony(BaseSolver):
                 self.log.debug("All terminals already connected")
                 break
 
-        # Adds all edges from graph to steiner tree solution
+        # self.steiner_tree = self.graph.subgraph(self.steiner_tree.nodes)
+
+        # # Adds all edges from graph to steiner tree solution
         self.log.debug("Building steiner_tree from original graph...")
         conn_components = list(comp.connected_components(self.steiner_tree))
         self.log.debug("Connected Componentes %s", conn_components)
@@ -428,7 +431,7 @@ class Ant():
             perturbation = random.random() if self.antcolony.allow_edge_perturbation else 1
 
             def min_max_normalization(value, min, max):
-                return (value - min) / (max - min)
+                return (value - min) / (max - min) if max != min else value
 
             distance = self.antcolony.graph[self.current_node][node]['cost'] * perturbation
             prize = self.antcolony.graph.nodes[node]['prize']
