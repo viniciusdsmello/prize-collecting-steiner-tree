@@ -45,4 +45,9 @@ def preprocessing(graph: nx.Graph, terminals: set, verbose: bool = False) -> Tup
             for node in component:
                 final_graph.remove_node(node)
 
+    conn_components = list(comp.connected_components(final_graph))
+    if len(conn_components) > 1:
+        conn_components.sort(key=lambda x: len(set(x).intersection(set(terminals))))
+        final_graph = final_graph.subgraph(conn_components[-1])
+
     return final_graph, terminals
