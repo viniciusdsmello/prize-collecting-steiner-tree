@@ -114,15 +114,22 @@ class BaseSolver():
 
         return path_cost
 
-    def _get_steiner_cost(self) -> float:
+    def _get_steiner_cost(self, steiner_tree: nx.Graph = None) -> float:
         """Returns the cost for the steiner tree solution
+
+        Args:
+            steiner_tree (nx.Graph, optional): Steiner Tree solution to be evaluated. If not passed, it evaluates the attribute
+            steiner_tree. Defaults to None.
 
         Returns:
             float: Returns the total cost of a given path
         """
+        if steiner_tree is None:
+            steiner_tree = self.steiner_tree
+
         steiner_cost = computes_steiner_cost(
             self.graph,
-            self.steiner_tree,
+            steiner_tree,
             self.terminals
         )
 
@@ -183,22 +190,38 @@ class BaseSolver():
 
         return steiner_tree, steiner_cost
 
-    def _process_cycles(self):
+    def _process_cycles(self, steiner_tree: nx.Graph = None) -> nx.Graph:
         """
         Process steiner_tree in order to find and remove any cycle found
+
+        Args:
+            steiner_tree (nx.Graph, optional): Steiner Tree solution. If not set, the attribute steiner_tree will be used.
+                Defaults to None.
+        Returns:
+            (nx.Graph): Returns the steiner_tree solution without cycles.
         """
         self.log.debug("Checking cycles...")
-        all_edges_cost = dict(nx.get_edge_attributes(self.graph, 'cost')).items()
-        while True:
+        all_edges_cost = nx.get_edge_attributes(self.graph, 'cost')
+        
+        if steiner_tree is None:
+            steiner_tree = self.steiner_tree
+        
+        check_cycles = True
+        while check_cycles:
             try:
-                cycle = nx.find_cycle(self.steiner_tree)
+                cycle = nx.find_cycle(steiner_tree)
                 self.log.debug(f'Cycle found - {cycle}')
-                
-                # Sort edges by cost
-                cycle_edges_cost = list(filter(lambda edge: edge in cycle, all_edges_cost)).sort(key=lambda edge: edge['cost'])
-                
+
+                cycle_edges_cost = list(filter(lambda edge: edge in cycle, all_edges_cost))
+                # TODO: Sort edges by cost
+                # cycle_edges_cost.sort(key=lambda edge: edge['cost'])
+
                 edge = cycle_edges_cost[-1]
                 self.log.debug(f'Removing edge {edge}...')
-                self.steiner_tree.remove_edge(edge[0], edge[1])
-            except:
-                break
+                steiner_tree.remove_edge(*edge)
+            except nx.NetworkXNoCycle:
+                self.log.debug(f'No cycle found')
+                check_cycles = False
+            except Exception as e:
+                self.log.exception("Error %s", e)
+        return steiner_tree
