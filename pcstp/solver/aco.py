@@ -384,7 +384,7 @@ class Ant():
         self.has_visited_all_terminals = set(self.antcolony.terminals).issubset(set(self.route))
         no_neighbors_to_visit = len(current_neighbors) == 0
 
-        if self.has_visited_all_nodes or self.has_visited_all_terminals or no_neighbors_to_visit or self.antcolony.ant_max_moves:
+        if self.has_visited_all_nodes or self.has_visited_all_terminals or no_neighbors_to_visit or len(self.route) > self.antcolony.ant_max_moves:
             reached_end = True
 
         return reached_end
