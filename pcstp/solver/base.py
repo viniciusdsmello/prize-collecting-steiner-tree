@@ -24,12 +24,12 @@ def computes_steiner_cost(graph: nx.Graph, steiner_tree: nx.Graph, terminals: Se
 
     terminals_not_connected_cost = sum(
         [
-            int(graph.nodes[n]['prize']) for n in graph.nodes
+            float(graph.nodes[n]['prize']) for n in graph.nodes
             if n in terminals and n not in steiner_tree.nodes
         ]
     )
 
-    edges_cost = 0
+    edges_cost = 0.0
     for edge in steiner_tree.edges:
         if edge in graph.edges:
             edges_cost += graph.edges[edge]['cost']

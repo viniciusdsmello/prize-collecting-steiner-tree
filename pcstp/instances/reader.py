@@ -228,7 +228,7 @@ class DatReader():
                     h = int(float(h))
                     prize = float(prize)
 
-                    is_terminal = prize > 0
+                    is_terminal = bool(prize > 0)
 
                     self.graph.add_node(node, prize=prize, terminal=is_terminal, pos=(v, h))
 
