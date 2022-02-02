@@ -33,6 +33,7 @@ class AntColony(BaseSolver):
         seed: int = 100,
         normalize_distance_prize: bool = False,
         allow_edge_perturbation: bool = False,
+        ant_max_moves: int = 100,
         **kwargs
     ):
         """
@@ -66,6 +67,7 @@ class AntColony(BaseSolver):
                 Defaults to 'False'.
             allow_edge_perturbation (bool, optional): If true, adds a uniform distributed perturbation to edges cost.
                 Defaults to 'False'.
+            ant_max_moves (bool, opttional): Set the max moves an ant can make without reaching all terminals. Defaults to 100.
         """
         super().__init__(graph, terminals, **kwargs)
 
@@ -93,6 +95,7 @@ class AntColony(BaseSolver):
         self.choose_best = choose_best
         self.normalize_distance_prize = normalize_distance_prize
         self.allow_edge_perturbation = allow_edge_perturbation
+        self.ant_max_moves = ant_max_moves
 
         if early_stopping:
             self.early_stopping = early_stopping
@@ -296,8 +299,9 @@ class AntColony(BaseSolver):
             for ant in self.ants:
                 ant.begin()
 
-        self.log.info("Best Iteration: %s - Best Cost: %s - Best ants route: %s",
-                      self.best_iteration, self.best_cost, self.best_route)
+        self.log.info("Best Iteration: %s - Best Cost: %s",
+                      self.best_iteration, self.best_cost)
+        self.log.debug("Best ants route: %s", self.best_route)
 
         self.steiner_tree, self.steiner_cost = (self.best_solution, self.best_cost)
 
@@ -380,7 +384,7 @@ class Ant():
         self.has_visited_all_terminals = set(self.antcolony.terminals).issubset(set(self.route))
         no_neighbors_to_visit = len(current_neighbors) == 0
 
-        if self.has_visited_all_nodes or self.has_visited_all_terminals or no_neighbors_to_visit:
+        if self.has_visited_all_nodes or self.has_visited_all_terminals or no_neighbors_to_visit or self.antcolony.ant_max_moves:
             reached_end = True
 
         return reached_end
@@ -400,7 +404,7 @@ class Ant():
             if set(self.antcolony.terminals).issubset(set(self.route)):
                 self.has_visited_all_terminals = True
 
-            if self.has_visited_all_nodes or self.has_visited_all_terminals:
+            if self.has_visited_all_nodes or self.has_visited_all_terminals or len(self.route) > self.antcolony.ant_max_moves:
                 if self.update_pheromones and self.antcolony.pheromone_deposit_strategy == 'traditional':
                     self.log.debug("Ant %s is depositing pheromone - route %s", self.name, self.route)
                     self.antcolony.trace_pheromone(self.route, self.antcolony._get_path_cost(self.route))
