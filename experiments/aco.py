@@ -12,7 +12,7 @@ import time
 import networkx as nx
 from pcstp.instances.generator import generate_random_steiner
 from pcstp.instances.reader import DatReader, SteinlibReader
-from pcstp.solver.aco_thread import AntColony
+from pcstp.solver.aco import AntColony
 from pcstp.solver.base import computes_steiner_cost
 from pcstp.steinertree import SteinerTreeProblem
 from pcstp.utils.draw import draw_steiner_graph
