@@ -17,6 +17,22 @@ In this Project an ACO algorithm was developed and compared with NetworkX Implem
 └── README.md
 ```
 
+# Instructions
+In order to run all experiments, first clone the project:
+```
+$ git clone https://github.com/viniciusdsmello/prize-collecting-steiner-tree.git
+```
+
+After that, it will be needed to create a Python Virtual Environment to install all required packages.
+```
+$ pip install -r requirements
+```
+
+With all packages installed, the experiments can be executed through Jupyter notebooks located at ```notebooks/``` directory or through scripts at ```experiments/``` directory.
+
+# Requirements
+This project was developed to work with Python 3.7+, and all packages required to run the experiments are listed in requirements.txt file.
+
 # Refereces
 1. The Prize-Collecting Steiner Tree Problem - https://homepage.univie.ac.at/ivana.ljubic/research/pcstp/#:~:text=Definition%3A,needed%20to%20establish%20the%20network.
 2. NetworkX Approximation to Steiner Tree - https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.approximation.steinertree.steiner_tree.html
