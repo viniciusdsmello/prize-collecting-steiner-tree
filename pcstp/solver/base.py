@@ -66,25 +66,11 @@ class BaseSolver():
         Args:
             u (int): First node index
             v (int): Second node index
-
-        A *simple path* in a graph is a nonempty sequence of nodes in which
-        no node appears more than once in the sequence, and each adjacent
-        pair of nodes in the sequence is adjacent in the graph.
-
-        This algorithm uses a modified depth-first search to generate the
-        paths [1]_.  A single path can be found in $O(V+E)$ time but the
-        number of simple paths in a graph can be very large, e.g. $O(n!)$ in
-        the complete graph of order $n$.
-
-        References
-        ----------
-        .. [1] R. Sedgewick, "Algorithms in C, Part 5: Graph Algorithms",
-        Addison Wesley Professional, 3rd ed., 2001.
         """
         self.log.debug(f"Finding all paths between {u} and {v}...")
 
         # TODO: Try different algoritms in order to find paths between nodes.
-        all_paths = list(nx.all_shortest_paths(G=self.graph, source=u, target=v))
+        all_paths = list(nx.all_shortest_paths(G=self.graph, source=u, target=v, weight='cost'))
 
         return all_paths
 
