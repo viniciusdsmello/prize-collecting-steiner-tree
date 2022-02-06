@@ -22,7 +22,7 @@ class GreedyH1(BaseSolver):
         terminals_combinations = list(combinations(self.terminals, 2))
         for combination in terminals_combinations:
             terminal_i, terminal_j = combination
-            self.log.info('Searching paths between terminals %s and %s', terminal_i, terminal_j)
+            self.log.debug('Searching paths between terminals %s and %s', terminal_i, terminal_j)
             paths = self._get_all_paths_between_nodes(
                 terminal_i,
                 terminal_j)
@@ -32,9 +32,6 @@ class GreedyH1(BaseSolver):
                 "cost": min_cost,
                 "path": min_path
             }
-
-            self.log.debug(
-                f"Path between {terminal_i} and {terminal_j} ({min_path}) - cost ({min_cost})")
 
             self._all_terminals_path.append(path)
 
