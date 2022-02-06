@@ -307,9 +307,6 @@ class AntColony(BaseSolver):
 
         return self.steiner_tree, self.steiner_cost
 
-    def _get_neighbors(self, node: int) -> List[int]:
-        return list(self.graph.neighbors(node))
-
 
 class Ant():
     def __init__(

@@ -74,6 +74,9 @@ class BaseSolver():
 
         return all_paths
 
+    def _get_neighbors(self, node: int) -> List[int]:
+        return list(self.graph.neighbors(node))
+
     def _get_path_cost(self, path: List[int]) -> float:
         """Given a path computes its cost
 
