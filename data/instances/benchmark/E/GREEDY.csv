@@ -1,0 +1,6 @@
+,filename,experiment,num_nodes,num_edges,num_nodes_after_preprocessing,num_edges_after_preprocessing,terminals,steiner_cost,duration
+0,./data/instances/benchmark/E/e01.stp-A,1,2500,3125,1507,2132,5,159.0,0.09662890434265137
+1,./data/instances/benchmark/E/e02.stp-A,1,2500,3125,1543,2168,10,525.0,0.5536777973175049
+2,./data/instances/benchmark/E/e04.stp-A,1,2500,3125,1814,2439,625,8968.0,3527.115629196167
+3,./data/instances/benchmark/E/e03.stp-A,1,2500,3125,1698,2323,417,7993.0,980.0309364795685
+4,./data/instances/benchmark/E/e05.stp-A,1,2500,3125,2062,2687,1250,11664.0,47782.06656432152
