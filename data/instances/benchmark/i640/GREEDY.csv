@@ -1,6 +1,0 @@
-,filename,experiment,num_nodes,num_edges,num_nodes_after_preprocessing,num_edges_after_preprocessing,terminals,steiner_cost,duration
-0,./data/instances/benchmark/i640/i640-201.stp,1,640,960,521,841,50,38551.0,1.8427033424377441
-1,./data/instances/benchmark/i640/i640-101.stp,1,640,960,506,826,25,21820.0,0.40628814697265625
-2,./data/instances/benchmark/i640/i640-301.stp,1,640,960,544,864,159,77686.0,25.2824490070343
-3,./data/instances/benchmark/i640/i640-001.stp,1,640,960,516,836,9,7917.0,0.043042659759521484
-4,./data/instances/benchmark/i640/i640-302.stp,1,640,960,535,855,160,76507.0,24.551291465759277
