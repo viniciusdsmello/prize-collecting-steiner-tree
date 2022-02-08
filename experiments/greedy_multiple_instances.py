@@ -39,8 +39,8 @@ SEED = 100
 
 # %%
 
-INSTANCES_PATH_PREFIX = '../data/instances/benchmark/PCSPG-CRR'
-NUM_EXPERIMENTS_PER_INSTANCE = 5
+INSTANCES_PATH_PREFIX = './data/instances/benchmark/E'
+NUM_EXPERIMENTS_PER_INSTANCE = 1
 
 all_files = glob.glob(os.path.join(INSTANCES_PATH_PREFIX, '*'))
 
@@ -69,7 +69,7 @@ for filename in files:
         if SEED:
             np.random.seed(SEED*experiment)
             random.seed(SEED*experiment)
-        solver = GreedyH1(stp_preprocessed.graph, list(stp_preprocessed.terminals), log_level='info')
+        solver = GreedyH1(stp_preprocessed.graph, list(stp_preprocessed.terminals), log_level='debug')
         steiner_tree, greedy_cost = solver.solve()
         print(f'Cost: {greedy_cost} ')
 
