@@ -1,6 +1,0 @@
-,filename,experiment,num_nodes,num_edges,num_nodes_after_preprocessing,num_edges_after_preprocessing,terminals,steiner_cost,duration
-0,./data/instances/benchmark/RPCST-cologne/cologne1/i102M2.stp,1,749,6343,675,6269,12,644514.5283039999,0.3623361587524414
-1,./data/instances/benchmark/RPCST-cologne/cologne1/i101M2.stp,1,748,6332,674,6258,11,430392.39532599994,0.29134345054626465
-2,./data/instances/benchmark/RPCST-cologne/cologne1/i103M2.stp,1,751,6343,677,6269,14,583656.354266,0.47246289253234863
-3,./data/instances/benchmark/RPCST-cologne/cologne1/i104M2.stp,1,741,6293,667,6219,4,97148.789008,0.03182268142700195
-4,./data/instances/benchmark/RPCST-cologne/cologne1/i105M2.stp,1,741,6296,667,6222,4,114983.176803,0.03363370895385742

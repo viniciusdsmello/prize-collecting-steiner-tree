@@ -1,6 +1,0 @@
-,filename,experiment,num_nodes,num_edges,num_nodes_after_preprocessing,num_edges_after_preprocessing,terminals,steiner_cost,duration
-0,./data/instances/benchmark/PCSPG-PUCNU/cc9-2nu.stp,1,512,2304,512,2304,64,225.0,2151.176409006119
-1,./data/instances/benchmark/PCSPG-PUCNU/cc3-4nu.stp,1,64,288,64,288,8,17.0,0.016890764236450195
-2,./data/instances/benchmark/PCSPG-PUCNU/cc3-5nu.stp,1,125,750,125,750,13,34.0,0.0661008358001709
-3,./data/instances/benchmark/PCSPG-PUCNU/cc5-3nu.stp,1,243,1215,243,1215,27,107.0,1.3562328815460205
-4,./data/instances/benchmark/PCSPG-PUCNU/cc6-2nu.stp,1,64,192,64,192,12,30.0,0.1665658950805664
